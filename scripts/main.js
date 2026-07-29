@@ -18,7 +18,6 @@ Hooks.once("init", () => {
     default: false
   });
 });
-
 /**
  * Add import button to actors directory
  */
@@ -26,21 +25,28 @@ Hooks.on('renderActorDirectory', (app, html, data) => {
   // Only show for Daggerheart system
   if (game.system.id !== 'daggerheart') return;
   
-  // Add import button to the header
-  const header = $(html).find(".directory-header");
-  if (header.length) {
-    const importButton = $(`
-      <button class="daggerheart-import-button" title="${game.i18n.localize('daggerheart-statblock-importer.title')}">
-        <i class="fas fa-file-import"></i>
-        ${game.i18n.localize('daggerheart-statblock-importer.button.import')}
-      </button>
-    `);
+  // Find the header actions container using standard DOM query
+  const header = html.querySelector(".header-actions");
+  
+  if (header) {
+    // Create the button natively
+    const importButton = document.createElement("button");
+    importButton.className = "daggerheart-import-button";
+    importButton.title = game.i18n.localize('daggerheart-statblock-importer.title');
     
-    importButton.on('click', () => {
+    // Add the icon and text
+    importButton.innerHTML = `
+      <i class="fas fa-file-import"></i>
+      ${game.i18n.localize('daggerheart-statblock-importer.button.import')}
+    `;
+    
+    // Attach the click event listener
+    importButton.addEventListener('click', () => {
       new ImportDialog().render(true);
     });
     
-    header.append(importButton);
+    // Append it to the very end of the header actions
+    header.appendChild(importButton);
   }
 });
 

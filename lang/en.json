@@ -7,8 +7,8 @@
     },
     "dialog": {
       "title": "Import Daggerheart Statblock",
-      "placeholder": "Paste your Daggerheart statblock text here...",
-      "instructions": "Copy the statblock text from freshcutgrass.app and paste it in the text area below. The module will parse the text and create a new actor in your world."
+      "placeholder": "Paste your freshcutgrass.app link here...",
+      "instructions": "Copy freshcutgrass.app link to an advesary and paste it in the text area below. The module will parse fetch the data and create a new actor in your world."
     },
     "notifications": {
       "success": "Successfully imported {name} as a new actor!",

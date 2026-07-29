@@ -1,16 +1,19 @@
 {
-  "id": "daggerheart-statblock-importer",
-  "title": "Daggerheart Statblock Importer",
+  "id": "daggerheart-freshcutgrass-importer",
+  "title": "Daggerheart Freshcutgrass Importer",
   "description": "A module for importing Daggerheart adversary, environment, and encounter statblocks from freshcutgrass.app into the Foundryborne Daggerheart system.",
   "authors": [
     {
       "name": "50gnr"
+    },
+    {
+      "name": "Vlada"
     }
   ],
   "version": "1.0.0",
   "compatibility": {
-    "minimum": "12",
-    "verified": "13"
+    "minimum": "14",
+    "verified": "14"
   },
   "esmodules": [
     "scripts/main.js"
@@ -36,8 +39,8 @@
       }
     ]
   },
-  "url": "https://github.com/50gnr/daggerheart-statblock-importer",
-  "manifest": "https://github.com/50gnr/daggerheart-statblock-importer/releases/latest/download/module.json",
-  "download": "https://github.com/50gnr/daggerheart-statblock-importer/releases/latest/download/daggerheart-statblock-importer.zip"
+  "url": "https://github.com/Zendelll/daggerheart-freshcutgrass-importer",
+  "manifest": "https://github.com/Zendelll/daggerheart-freshcutgrass-importer/releases/latest/download/module.json",
+  "download": "https://github.com/Zendelll/daggerheart-freshcutgrass-importer/releases/latest/download/daggerheart-statblock-importer.zip"
 }
 

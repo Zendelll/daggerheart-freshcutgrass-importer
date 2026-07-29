@@ -1,0 +1,19 @@
+<div class="dialog-content" style="display: flex; flex-direction: column; height: 100%;">
+  <div class="instructions">
+    {{localize "daggerheart-statblock-importer.dialog.instructions"}}
+  </div>
+  
+  <textarea 
+    class="statblock-input" 
+    name="statblockText" 
+    placeholder="{{localize 'daggerheart-statblock-importer.dialog.placeholder'}}"
+    required
+    style="flex: 1; margin: 10px 0; padding: 5px;"
+  ></textarea>
+  
+  <footer class="form-footer" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: auto;">
+    <button type="button" data-action="import">
+      <i class="fas fa-download"></i> {{localize "daggerheart-statblock-importer.button.import"}}
+    </button>
+  </footer>
+</div>

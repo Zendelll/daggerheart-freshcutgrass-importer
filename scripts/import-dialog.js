@@ -1,125 +1,87 @@
-import { StatblockParser } from './parser.js';
 import { DaggerheartActorCreator } from './actor-creator.js';
+import { StatblockFetcher } from './fetch-advesary.js';
+
+// Get both the base class and the Handlebars mixin
+const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
 /**
- * Dialog for importing Daggerheart statblocks
+ * AppV2 Dialog for importing Daggerheart statblocks
+ * Wrap ApplicationV2 in the HandlebarsApplicationMixin
  */
-export class ImportDialog extends Dialog {
-  constructor(options = {}) {
-    const data = {
-      title: game.i18n.localize('daggerheart-statblock-importer.dialog.title'),
-      content: `
-        <form class="daggerheart-statblock-importer">
-          <div class="dialog-content">
-            <div class="instructions">
-              ${game.i18n.localize("daggerheart-statblock-importer.dialog.instructions")}
-            </div>
-            
-            <textarea 
-              class="statblock-input" 
-              name="statblockText" 
-              placeholder="${game.i18n.localize('daggerheart-statblock-importer.dialog.placeholder')}"
-              required
-            ></textarea>
-          </div>
-        </form>
-      `,
-      buttons: {
-        import: {
-          icon: "fas fa-download",
-          label: game.i18n.localize("daggerheart-statblock-importer.button.import"),
-          callback: (html) => this._onImport(html)
-        },
-        close: {
-          icon: "fas fa-times",
-          label: game.i18n.localize("daggerheart-statblock-importer.button.close"),
-          callback: () => this.close()
-        }
-      },
-      default: "import",
-      close: () => {}
-    };
-    
-    super(data, options);
-    
-    this.options.classes = ['daggerheart-statblock-importer', 'dialog'];
-    this.options.width = 600;
-    this.options.height = 500;
-    this.options.resizable = true;
-  }
+export class ImportDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   
-  /** @override */
-  activateListeners(html) {
-    super.activateListeners(html);
-    
-    // Focus on textarea when dialog opens
-    html.find('.statblock-input').focus();
+  static DEFAULT_OPTIONS = {
+    id: "daggerheart-statblock-importer-dialog",
+    classes: ["daggerheart-statblock-importer", "dialog"],
+    window: {
+      title: "daggerheart-statblock-importer.dialog.title",
+      resizable: true
+    },
+    position: {
+      width: 600,
+      height: 500
+    },
+    actions: {
+      import: ImportDialog._onImportAction
+    }
+  };
+
+  // Define the parts of the application (the template file)
+  static PARTS = {
+    form: {
+      // NOTE: Change this path to match your actual module structure!
+      template: "modules/daggerheart-freshcutgrass-importer/templates/import-dialog.hbs" 
+    }
+  };
+
+  // Focus on textarea after rendering
+  _onRender(context, options) {
+    super._onRender(context, options);
+    this.element.querySelector('.statblock-input')?.focus();
   }
-  
-  /**
-   * Handle the import action
-   */
-  async _onImport(html) {
-    const statblockText = html.find(".statblock-input").val().trim();
+
+  // Action Handler
+  static async _onImportAction(event, target) {
+    const textarea = this.element.querySelector(".statblock-input");
+    const statblockLink = textarea.value.trim();
     
-    if (!statblockText) {
+    if (!statblockLink) {
       ui.notifications.warn(game.i18n.localize("daggerheart-statblock-importer.notifications.empty"));
       return;
     }
     
-    // Disable the import button during processing
-    const importButton = html.find("[data-button='import']");
-    const originalText = importButton.html();
-    importButton.prop("disabled", true);
-    importButton.html("<i class=\"fas fa-spinner fa-spin\"></i> " + 
-      game.i18n.localize("daggerheart-statblock-importer.notifications.parsing"));
+    const originalText = target.innerHTML;
+    target.disabled = true;
+    target.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${game.i18n.localize("daggerheart-statblock-importer.notifications.parsing")}`;
     
     try {
-      // Parse the statblock
-      console.log("Daggerheart Statblock Importer | Starting statblock import", { text: statblockText });
+      console.log("Daggerheart Statblock Importer | Starting statblock import", { text: statblockLink });
+
+      const fetcher = new StatblockFetcher();
+      const fetchedData = await fetcher.fetch(statblockLink)
       
-      ui.notifications.info(game.i18n.localize("daggerheart-statblock-importer.notifications.parsing"));
-      
-      const parser = new StatblockParser();
-      const parsedData = await parser.parse(statblockText);
-      
-      console.log("Daggerheart Statblock Importer | Parsed statblock data", parsedData);
-      
-      // Create the actor
-      importButton.html("<i class=\"fas fa-spinner fa-spin\"></i> " + 
-        game.i18n.localize("daggerheart-statblock-importer.notifications.creating"));
+      target.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${game.i18n.localize("daggerheart-statblock-importer.notifications.creating")}`;
       
       const actorCreator = new DaggerheartActorCreator();
-      const actor = await actorCreator.createActor(parsedData);
+      const actor = await actorCreator.createActor(fetchedData);
       
-      console.log("Daggerheart Statblock Importer | Created actor", actor);
-      
-      // Success notification
       ui.notifications.info(
-        game.i18n.format("daggerheart-statblock-importer.notifications.success", {
-          name: actor.name
-        })
+        game.i18n.format("daggerheart-statblock-importer.notifications.success", { name: actor.name })
       );
       
-      // Close the dialog
       this.close();
-      
-      // Open the created actor sheet
       actor.sheet.render(true);
       
     } catch (error) {
       console.error("Daggerheart Statblock Importer | Import failed", error);
-      
       ui.notifications.error(
-        game.i18n.format("daggerheart-statblock-importer.notifications.error", {
-          error: error.message
-        })
+        game.i18n.format("daggerheart-statblock-importer.notifications.error", { error: error.message })
       );
     } finally {
-      // Re-enable the import button
-      importButton.prop("disabled", false);
-      importButton.html(originalText);
+      if (this.rendered) {
+        target.disabled = false;
+        target.innerHTML = originalText;
+      }
     }
   }
 }
-

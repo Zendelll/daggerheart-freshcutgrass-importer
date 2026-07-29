@@ -154,6 +154,7 @@ export class DaggerheartActorCreator {
         description: parsedData.description || '',
         attack: {
           name: attackName,
+          img: this._getDefaultAttackImage(parsedData),
           range: this._mapRange(parsedData.attackInfo?.range || "melee"),
           roll: {
             type: 'attack',
@@ -209,6 +210,7 @@ export class DaggerheartActorCreator {
     
     for (const exp of experiences) {
       const id = foundry.utils.randomID();
+      console.log(exp)
       systemExperiences[id] = {
         name: exp.name,
         value: exp.value
@@ -223,7 +225,7 @@ export class DaggerheartActorCreator {
    */
   _calculateTotalHP(hitPoints) {
     if (!hitPoints) return 0;
-    return (hitPoints.minor || 0) + (hitPoints.major || 0) + (hitPoints.severe || 0);
+    return hitPoints.total || 0;
   }
   
   /**
@@ -244,6 +246,11 @@ export class DaggerheartActorCreator {
   _getDefaultImage(parsedData) {
     // Use the same default as the Daggerheart system
     return 'systems/daggerheart/assets/icons/documents/actors/dragon-head.svg';
+  }
+
+  _getDefaultAttackImage(parsedData) {
+    // Use the same default as the Daggerheart system
+    return 'icons/skills/melee/blood-slash-foam-red.webp';
   }
   
   /**
@@ -274,12 +281,25 @@ export class DaggerheartActorCreator {
     const actionDetails = this._parseActionDetails(feature);
     
     // Use 'feature' as the item type - this is the correct type for Daggerheart system
+    var image = "";
+    switch (feature.type) {
+      case "action":
+        image = 'icons/creatures/abilities/mouth-teeth-rows-red.webp';
+        break;
+      case "passive":
+        image = 'icons/skills/melee/shield-block-gray-yellow.webp';
+        break;
+      case "reaction":
+        image = 'icons/skills/ranged/projectile-spiral-gray.webp';
+        break;
+    }
     const itemData = {
       name: feature.name,
       type: 'feature',
-      img: 'icons/creatures/abilities/mouth-teeth-rows-red.webp',
+      img: image,
       system: {
         description: feature.description || '',
+        featureForm: feature.type,
         resource: null,
         actions: this._createFeatureActions(feature, actionDetails),
         originItemType: null,
@@ -326,12 +346,12 @@ export class DaggerheartActorCreator {
       }
       
       actions[actionId] = {
-        type: actionType,
+        type: 'damage',
         _id: actionId,
         systemPath: "actions",
         description: feature.description || '',
         chatDisplay: true,
-        actionType: feature.type || 'action',
+        actionType: 'generic',
         cost: this._formatCost(actionDetails.cost),
         uses: {
           value: null,
@@ -367,7 +387,7 @@ export class DaggerheartActorCreator {
           systemPath: "actions",
           description: "This splash covers the ground within Very Close range with blood, and all creatures other than the Burrower who move through it take 1d6 physical damage.",
           chatDisplay: true,
-          actionType: 'action',
+          actionType: 'generic',
           cost: [],
           uses: {
             value: null,
@@ -423,8 +443,8 @@ export class DaggerheartActorCreator {
   _formatCost(costArray) {
     return costArray.map(cost => ({
       scalable: false,
-      key: cost.type,
-      value: cost.amount,
+      key: cost.key,
+      value: cost.value,
       keyIsID: false,
       step: null
     }));
@@ -501,7 +521,7 @@ export class DaggerheartActorCreator {
   _formatRoll(actionType, actionDetails) {
     if (actionType === 'attack') {
       return {
-        type: "attack",
+        type: null,
         trait: null,
         difficulty: null,
         bonus: null,
@@ -541,7 +561,10 @@ export class DaggerheartActorCreator {
     const description = (feature.description || '').toLowerCase();
     
     // Name based on cost first
-    if (description.includes('mark a stress') || description.includes('mark stress')) {
+    if ((description.includes('mark a stress') || description.includes('mark stress')) 
+      && (description.includes('spend fear') || description.includes('mark fear'))) {
+      return "Stress and Fear";
+    } else if (description.includes('mark a stress') || description.includes('mark stress')) {
       return "Stress";
     } else if (description.includes('spend fear') || description.includes('mark fear')) {
       return "Fear";
@@ -623,7 +646,8 @@ export class DaggerheartActorCreator {
         step: null, 
         scalable: false 
       });
-    } else if (description.includes('mark a stress') || description.includes('mark stress')) {
+    }
+    if (description.includes('mark a stress') || description.includes('mark stress')) {
       details.cost.push({ 
         key: 'stress', 
         value: 1, 
