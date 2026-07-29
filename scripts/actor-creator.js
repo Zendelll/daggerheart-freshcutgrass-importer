@@ -210,7 +210,6 @@ export class DaggerheartActorCreator {
     
     for (const exp of experiences) {
       const id = foundry.utils.randomID();
-      console.log(exp)
       systemExperiences[id] = {
         name: exp.name,
         value: exp.value

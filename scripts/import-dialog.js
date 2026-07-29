@@ -29,7 +29,6 @@ export class ImportDialog extends HandlebarsApplicationMixin(ApplicationV2) {
   // Define the parts of the application (the template file)
   static PARTS = {
     form: {
-      // NOTE: Change this path to match your actual module structure!
       template: "modules/daggerheart-freshcutgrass-importer/templates/import-dialog.hbs" 
     }
   };

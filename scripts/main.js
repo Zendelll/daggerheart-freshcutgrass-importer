@@ -1,4 +1,3 @@
-import { StatblockParser } from './parser.js';
 import { DaggerheartActorCreator } from './actor-creator.js';
 import { ImportDialog } from './import-dialog.js';
 
@@ -65,7 +64,6 @@ window.DaggerheartStatblockImporter = {
   },
   
   // Expose classes for debugging
-  StatblockParser,
   DaggerheartActorCreator,
   ImportDialog
 };
