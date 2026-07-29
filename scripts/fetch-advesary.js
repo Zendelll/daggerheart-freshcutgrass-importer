@@ -4,96 +4,24 @@ export class StatblockFetcher {
       throw new Error(game.i18n.localize("daggerheart-statblock-importer.notifications.empty"));
     }
 
-    const result = {
-          name: "",
-          type: "adversary",
-          tier: 1,
-          subtype: "",
-          description: "",
-          difficulty: 10,
-          attack: 0,
-          attackInfo: null,
-          experience: "",
-          experiences: [], // Array for multi-line experiences
-          motivesAndTactics: "",
-          features: [],
-          hitPoints: { minor: 0, major: 0, severe: 0 },
-          stress: 0,
-          resistances: [],
-          immunities: [],
-          vulnerabilities: []
-        };
-
-    // Extract the ID
-    const url = new URL(link);
-    const id = url.searchParams.get("id");
+    const id = new URL(link).searchParams.get("id");
 
     try {
-      // 1. Make the API request
-      const response = await fetch("https://freshcutgrass.app/api/adversaries/public/by-ids", {
-        method: "POST", // POST is required when sending a JSON body like { "ids": [...] }
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ ids: [id] })
-      });
+      const data = await this._call_freshcutgrass_api(id);
 
-      if (!response.ok) {
-        throw new Error(`Network error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      // 2. Validate the response
       if (!Array.isArray(data) || data.length === 0) {
         throw new Error("No adversary found with that ID on Fresh Cut Grass.");
       }
 
-      // Grab the first object from the response array
       const apiData = data[0];
+      const features = this._build_features(apiData.features)
+      const [type, subtype] = this._build_type(apiData.type)
+      const attackInfo = this._build_attack(apiData.weapon)
+      const experiences = this._build_experiences(apiData.experience)
+      const motivesAndTactics = Array.isArray(apiData.motivesAndTactics) 
+          ? apiData.motivesAndTactics.join(",\n") 
+          : apiData.motivesAndTactics || ""
 
-
-      const features = Array.isArray(apiData.features) 
-        ? apiData.features.map(feature => {
-            return {
-              ...feature, // This spread operator keeps all other properties intact
-              type: feature.type ? feature.type.toLowerCase() : "", // Safely convert type to lowercase
-              name: feature.value ? feature.name + " (" + feature.value + ")" : feature.name // Add value to the name
-            };
-          }) 
-        : [];
-      const type = apiData.type.split(/(?=[A-Z])/).length > 1 ? apiData.type.split(/(?=[A-Z])/)[0].toLowerCase() : apiData.type.toLowerCase()
-      const subtype = apiData.type.split(/(?=[A-Z])/).length > 1 ? apiData.type.split(/(?=[A-Z])/)[1].toLowerCase() : apiData.type.toLowerCase()
-      
-      var attackInfo = apiData.weapon || null
-      if (!!attackInfo && attackInfo.damage.length > 0) {
-        attackInfo.dice = attackInfo.damage.split("+")[0]
-        if (attackInfo.damage.split("+").length > 1) {
-            attackInfo.bonus = attackInfo.damage.split("+")[1].split(" ")[0]
-            if (attackInfo.damage.split("+")[1].split(" ").length > 1) {
-                attackInfo.damageType = attackInfo.damage.split("+")[1].split(" ")[1]
-            }
-        } else {
-            attackInfo.bonus = "0"
-        }
-      }
-
-      const experiences = Array.isArray(apiData.experience) 
-        ? apiData.experience.map(expString => {
-            // The regex separates the text from the number at the very end of the string
-            // It handles positive numbers like "+2" or just "2", and negative numbers like "-1"
-            const match = expString.match(/^(.*?)\s*(?:\+)?(-?\d+)$/);
-            
-            if (match) {
-              return {
-                name: match[1].trim(),
-                value: match[2]
-              };
-            }
-          }) 
-        : [];
-
-      // 3. Map the API response to your expected data structure
       const result = {
         name: apiData.name,
         type: type,
@@ -102,16 +30,10 @@ export class StatblockFetcher {
         description: apiData.shortDescription || "",
         difficulty: apiData.difficulty || 10,
         attack: apiData.attackModifier || 0,
-        attackInfo: apiData.weapon || null, // API returns {name, range, damage}
-        experience: "", 
+        attackInfo: attackInfo,
         experiences: experiences,
-        // API returns motivesAndTactics as an array, join it with line breaks
-        motivesAndTactics: Array.isArray(apiData.motivesAndTactics) 
-          ? apiData.motivesAndTactics.join(",\n") 
-          : (apiData.motivesAndTactics || ""),
+        motivesAndTactics: motivesAndTactics,
         features: features,
-        
-        // Map damageThresholds to your hitPoints format (API uses null for missing thresholds)
         hitPoints: { 
           minor: apiData.damageThresholds?.minor || 0, 
           major: apiData.damageThresholds?.major || 0, 
@@ -119,8 +41,6 @@ export class StatblockFetcher {
           total: apiData.hitPoints || 0
         },
         stress: apiData.stress || 0,
-        
-        // Default to empty arrays if not present in the API
         resistances: apiData.resistances || [],
         immunities: apiData.immunities || [],
         vulnerabilities: apiData.vulnerabilities || []
@@ -132,5 +52,104 @@ export class StatblockFetcher {
       console.error("Daggerheart Statblock Importer | Fetch failed:", error);
       throw new Error("Failed to fetch statblock: " + error.message);
     }
+  }
+
+  async _call_freshcutgrass_api(id) {
+    const freshcutgrass_api_url = "https://freshcutgrass.app/api/adversaries/public/by-ids"
+
+    const response = await fetch(freshcutgrass_api_url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ids: [id] })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Network error: ${response.status} ${response.statusText}`);
+    }
+
+    return await response.json()
+  }
+
+  _build_features(featuresArray) {
+    const resultedFeatures = []
+    for (let feature of featuresArray || []) {
+      const formattedFeature = {
+        name: feature.value ? `${feature.name} (${feature.value})` : feature.name,
+        type: feature.type ? feature.type.toLowerCase() : "",
+        cost: feature.cost || {},
+        summon: feature.summon || [],
+        description: feature.description || "",
+      }
+      resultedFeatures.push(formattedFeature)
+    }
+    return resultedFeatures
+  }
+
+  _build_type(typeString) {
+    let resultType = ""
+    let resultSubtype = ""
+    if (typeString) {
+      const splittedType = typeString.split(/(?=[A-Z])/)
+      resultType = splittedType[0].toLowerCase() // In any case main type will be splittedType[0]
+
+      // If we don't have a subtype, then subtype = type
+      if (splittedType.length === 1) {
+        resultSubtype = resultType
+      } else {
+        resultSubtype = splittedType[1].toLowerCase()
+      }
+    }
+    return [resultType, resultSubtype]
+  }
+
+  _build_attack(weaponInfo) {
+    // (\d+d\d+) -> Captures the dice ("1d20")
+    // (?:\+(\d+))? -> Optionally matches a '+' followed by the bonus digits ("3")
+    // (?:\s+(\w+))? -> Optionally matches spaces followed by the damage type ("phy")
+    const regex = /^(\d+d\d+)(?:\+(\d+))?(?:\s+(\w+))?.*$/;
+    const resultAttack = {
+      name: "",
+      dice: "",
+      bonus: "0",
+      damageType: "",
+      range: ""
+    }
+
+    if (!!weaponInfo) {
+      resultAttack.name = weaponInfo.name
+      resultAttack.range = weaponInfo.range
+
+      // Fill damage numbers only if it's present
+      if (weaponInfo.damage.length > 0) {
+        const match = weaponInfo.damage.match(regex);
+        if (match) {
+          resultAttack.dice = match[1] || ""
+          resultAttack.bonus = match[2] || "0"
+          resultAttack.damageType = match[3] || ""
+        }
+      }
+    }
+
+    return resultAttack
+  }
+
+  _build_experiences(experiences) {
+    // (.*?) -> Captures any text or characters (non-greedy) at the beginning
+    // (-?\d+) -> Captures a number, optionally starting with a minus sign ("3" or "-2")
+    const regex = /^(.*?)\s*(?:\+)?(-?\d+)$/;
+    const resultedExperiences = []
+
+    for (let experience of experiences || []) {
+      const match = experience.match(regex);
+      if (match) {
+        resultedExperiences.push({
+          name: match[1].trim() || "",
+          value: match[2] || "0",
+        })
+      }
+    }
+    return resultedExperiences
   }
 }
