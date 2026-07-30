@@ -56,9 +56,8 @@ Contributions are welcome! Please feel free to submit issues and pull requests.
 ## Support
 
 For support, please:
-1. Check the [troubleshooting section](#troubleshooting)
-2. Search existing [issues](https://github.com/50gnr/daggerheart-statblock-importer/issues)
-3. Create a new issue with detailed information about your problem
+1. Search existing [issues](https://github.com/Zendelll/daggerheart-freshcutgrass-importer/issues)
+2. Create a new issue with detailed information about your problem
 
 ## Acknowledgments
 
