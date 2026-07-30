@@ -1,32 +1,24 @@
-/**
- * Creates Daggerheart actors from parsed statblock data
- */
 export class DaggerheartActorCreator {
+  default_enviroment_image = "icons/svg/oak.svg"
+  default_adversary_image = "systems/daggerheart/assets/icons/documents/actors/dragon-head.svg"
+  default_physical_attack_image = "icons/skills/melee/blood-slash-foam-red.webp"
+  default_magical_attack_image = "icons/magic/symbols/circled-gem-pink.webp"
+  default_action_feature_image = "icons/creatures/abilities/mouth-teeth-rows-red.webp"
+  default_passive_feature_image = "icons/skills/melee/shield-block-gray-yellow.webp"
+  default_reaction_feature_image = "icons/skills/ranged/projectile-spiral-gray.webp"
+
+
   constructor() {
     this.debugMode = game?.settings?.get('daggerheart-statblock-importer', 'debugMode') || false;
   }
-  
-  /**
-   * Create a new Daggerheart actor from parsed statblock data
-   * @param {Object} parsedData - The parsed statblock data
-   * @returns {Actor} The created actor
-   */
+
   async createActor(parsedData) {
     this._debug('Creating actor from parsed data', parsedData);
     
-    // Validate system compatibility
-    if (game.system.id !== 'daggerheart') {
-      throw new Error('This module requires the Daggerheart system');
-    }
-    
-    // Prepare actor data
     const actorData = this._buildActorData(parsedData);
-    
-    // Create the actor
     const actor = await Actor.create(actorData);
     
-    // Create items from features and experiences
-    const items = await this._createItems(parsedData, actor);
+    const items = await this._createItems(parsedData);
     if (items.length > 0) {
       await actor.createEmbeddedDocuments('Item', items);
     }
@@ -35,12 +27,8 @@ export class DaggerheartActorCreator {
     return actor;
   }
   
-  /**
-   * Build the core actor data structure
-   */
   _buildActorData(parsedData) {
-    // Determine actor type
-    const actorType = parsedData.type === 'environment' ? 'environment' : 'adversary';
+    const actorType = parsedData.type
     
     if (actorType === 'environment') {
       return this._buildEnvironmentData(parsedData);
@@ -48,15 +36,12 @@ export class DaggerheartActorCreator {
       return this._buildAdversaryData(parsedData);
     }
   }
-  
-  /**
-   * Build environment actor data
-   */
+
   _buildEnvironmentData(parsedData) {
     return {
       name: parsedData.name || 'Unknown Environment',
       type: 'environment',
-      img: 'icons/svg/mystery-man.svg',
+      img: this.default_enviroment_image,
       system: {
         difficulty: parsedData.difficulty || 10,
         tier: parsedData.tier || 1,
@@ -69,43 +54,31 @@ export class DaggerheartActorCreator {
     };
   }
   
-  /**
-   * Build adversary actor data
-   */
   _buildAdversaryData(parsedData) {
-    // Determine attack name and dice from attackInfo
-    let attackName = "Attack";
-    let attackDice = "d6";
-    let attackBonus = parsedData.attack || 0;
-    
-    if (parsedData.attackInfo) {
-      attackName = parsedData.attackInfo.name;
-      // Extract dice size from dice string (e.g., "1d12" -> "d12")
-      const diceMatch = parsedData.attackInfo.dice.match(/\d*d(\d+)/);
-      if (diceMatch) {
-        attackDice = `d${diceMatch[1]}`;
-      }
-    }
+    let [attackName, attackDice, attackBonus] = this._buildAttackData(parsedData)
+    const experiences = this._buildExperiences(parsedData.experiences)
+    const attackType = [parsedData.attackInfo.damageType === 'phy' ? 'physical' : 'magical']
+
     
     const actorData = {
       name: parsedData.name,
       type: 'adversary',
-      img: this._getDefaultImage(parsedData),
+      img: this.default_adversary_image,
       system: {
-        difficulty: parsedData.difficulty || 10,
+        difficulty: parsedData.difficulty,
         damageThresholds: {
-          major: Math.max(8, Math.floor(parsedData.difficulty * 0.6)),
-          severe: Math.max(15, Math.floor(parsedData.difficulty * 1.1))
+          major: parsedData.hitPoints.major,
+          severe: parsedData.hitPoints.severe,
         },
         resources: {
           hitPoints: {
             value: 0,
-            max: this._calculateTotalHP(parsedData.hitPoints),
+            max: parsedData.hitPoints.total,
             isReversed: true
           },
           stress: {
             value: 0,
-            max: parsedData.stress || 3,
+            max: parsedData.stress,
             isReversed: true
           }
         },
@@ -122,8 +95,8 @@ export class DaggerheartActorCreator {
         },
         type: parsedData.subtype || 'solo',
         notes: '',
-        hordeHp: 1,
-        experiences: this._parseExperiencesForSystemData(parsedData.experiences || []),
+        hordeHp: parsedData.hordeHp,
+        experiences: experiences,
         bonuses: {
           roll: {
             attack: {
@@ -150,12 +123,12 @@ export class DaggerheartActorCreator {
             }
           }
         },
-        tier: parsedData.tier || 1,
-        description: parsedData.description || '',
+        tier: parsedData.tier,
+        description: parsedData.description,
         attack: {
           name: attackName,
-          img: this._getDefaultAttackImage(parsedData),
-          range: this._mapRange(parsedData.attackInfo?.range || "melee"),
+          img: attackType === "physical" ? this.default_physical_attack_image : this.default_magical_attack_image,
+          range: this._mapRange(parsedData.attackInfo.range),
           roll: {
             type: 'attack',
             bonus: attackBonus,
@@ -166,7 +139,7 @@ export class DaggerheartActorCreator {
             }
           },
           damage: {
-            parts: parsedData.attackInfo ? [{
+            parts: [{
               value: {
                 custom: {
                   enabled: true,
@@ -178,10 +151,10 @@ export class DaggerheartActorCreator {
                 bonus: parsedData.attackInfo.bonus
               },
               applyTo: "hitPoints",
-              type: [parsedData.attackInfo.damageType === 'phy' ? 'physical' : parsedData.attackInfo.damageType === 'mag' ? 'magical' : parsedData.attackInfo.damageType],
+              type: attackType,
               base: false,
               resultBased: false
-            }] : [],
+            }],
             includeBase: false
           }
         }
@@ -201,64 +174,54 @@ export class DaggerheartActorCreator {
     this._debug('Built actor data', actorData);
     return actorData;
   }
-  
-  /**
-   * Parse experiences for system data format (embedded in actor data)
-   */
-  _parseExperiencesForSystemData(experiences) {
-    const systemExperiences = {};
+
+  _buildAttackData(parsedData) {
+    let attackName = "Attack";
+    let attackDice = "d6";
+    let attackBonus = parsedData.attack || 0;
+    
+    if (parsedData.attackInfo) {
+      attackName = parsedData.attackInfo.name;
+      // Extract dice size from dice string (e.g., "1d12" -> "d12")
+      const diceMatch = parsedData.attackInfo.dice.match(/\d*d(\d+)/);
+      if (diceMatch) {
+        attackDice = `d${diceMatch[1]}`;
+      }
+    }
+
+    return [attackName, attackDice, attackBonus]
+  }
+
+  _buildExperiences(experiences) {
+    const resultExperiences = {};
     
     for (const exp of experiences) {
-      const id = foundry.utils.randomID();
-      systemExperiences[id] = {
+      resultExperiences[foundry.utils.randomID()] = {
         name: exp.name,
         value: exp.value
       };
     }
     
-    return systemExperiences;
-  }
-
-  /**
-   * Calculate total HP from the HP breakdown
-   */
-  _calculateTotalHP(hitPoints) {
-    if (!hitPoints) return 0;
-    return hitPoints.total || 0;
+    return resultExperiences;
   }
   
-  /**
-   * Map range text to Daggerheart system values
-   */
   _mapRange(rangeText) {
-    const range = rangeText.toLowerCase().trim();
-    if (range.includes('very close')) return 'veryClose';
-    if (range.includes('close')) return 'close';
-    if (range.includes('far')) return 'far';
-    if (range.includes('very far')) return 'veryFar';
-    return 'melee'; // default
-  }
-
-  /**
-   * Get default image based on creature type
-   */
-  _getDefaultImage(parsedData) {
-    // Use the same default as the Daggerheart system
-    return 'systems/daggerheart/assets/icons/documents/actors/dragon-head.svg';
-  }
-
-  _getDefaultAttackImage(parsedData) {
-    // Use the same default as the Daggerheart system
-    return 'icons/skills/melee/blood-slash-foam-red.webp';
+    const rangeMap = {
+      "Melee": "melee",
+      "Very Close": "veryClose",
+      "Close": "close",
+      "Far": "far",
+      "Very Far": "veryFar",
+    }
+    return rangeMap[rangeText]
   }
   
   /**
-   * Create items from parsed data (features only, experiences are embedded in system data)
+   * Create items from parsed data (features only)
    */
-  async _createItems(parsedData, actor) {
+  async _createItems(parsedData) {
     const items = [];
     
-    // Create feature items (experiences are handled in system data, not as separate items)
     for (const feature of parsedData.features || []) {
       const itemData = this._buildFeatureItem(feature);
       if (itemData) {
@@ -279,23 +242,10 @@ export class DaggerheartActorCreator {
     // Parse advanced action details from description
     const actionDetails = this._parseActionDetails(feature);
     
-    // Use 'feature' as the item type - this is the correct type for Daggerheart system
-    var image = "";
-    switch (feature.type) {
-      case "action":
-        image = 'icons/creatures/abilities/mouth-teeth-rows-red.webp';
-        break;
-      case "passive":
-        image = 'icons/skills/melee/shield-block-gray-yellow.webp';
-        break;
-      case "reaction":
-        image = 'icons/skills/ranged/projectile-spiral-gray.webp';
-        break;
-    }
     const itemData = {
       name: feature.name,
       type: 'feature',
-      img: image,
+      img: this[`default_${feature.type}_feature_image`],
       system: {
         description: feature.description || '',
         featureForm: feature.type,
@@ -351,7 +301,7 @@ export class DaggerheartActorCreator {
         description: feature.description || '',
         chatDisplay: true,
         actionType: 'generic',
-        cost: this._formatCost(actionDetails.cost),
+        cost: actionDetails.cost,
         uses: {
           value: null,
           max: "",
@@ -372,7 +322,7 @@ export class DaggerheartActorCreator {
           difficulty: null,
           damageMod: "none"
         },
-        name: this._getActionName(feature, actionType),
+        name: this._getActionName(feature),
         img: 'icons/creatures/abilities/mouth-teeth-rows-red.webp',
         range: actionDetails.range || ""
       };
@@ -434,19 +384,6 @@ export class DaggerheartActorCreator {
     }
     
     return actions;
-  }
-  
-  /**
-   * Format cost array for Daggerheart system
-   */
-  _formatCost(costArray) {
-    return costArray.map(cost => ({
-      scalable: false,
-      key: cost.key,
-      value: cost.value,
-      keyIsID: false,
-      step: null
-    }));
   }
   
   /**
@@ -556,24 +493,35 @@ export class DaggerheartActorCreator {
   /**
    * Get appropriate action name based on cost or action type
    */
-  _getActionName(feature, actionType) {
-    const description = (feature.description || '').toLowerCase();
-    
+  _getActionName(feature) {
     // Name based on cost first
-    if ((description.includes('mark a stress') || description.includes('mark stress')) 
-      && (description.includes('spend fear') || description.includes('mark fear'))) {
-      return "Stress and Fear";
-    } else if (description.includes('mark a stress') || description.includes('mark stress')) {
-      return "Stress";
-    } else if (description.includes('spend fear') || description.includes('mark fear')) {
-      return "Fear";
-    } else if (description.includes('spend hope') || description.includes('mark hope')) {
-      return "Hope";
-    } else if (description.includes('mark armor') || description.includes('armor slot')) {
-      return "Armor";
-    } else if (description.includes('mark hp') || description.includes('mark a hp')) {
-      return "HP";
+    let actionName = ""
+    for (let cost of feature.cost) {
+      let costName = ""
+      let conjunction = ""
+      if (actionName.length > 0) {
+        conjunction = " and "
+      }
+      switch (cost.key) {
+        case "stress":
+          costName = "Stress"
+          break
+        case "fear":
+          costName = "Fear"
+          break
+        case "hope":
+          costName = "Hope"
+          break
+        case "armor":
+          costName = "Armor"
+          break
+        case "hp":
+          costName = "HP"
+          break
+      }
+      actionName += costName + conjunction
     }
+    if (actionName.length > 0) { return actionName }
     
     // Name based on action type if no cost
     if (feature.type === 'reaction') {
@@ -621,10 +569,10 @@ export class DaggerheartActorCreator {
    * Parse action details from feature description
    */
   _parseActionDetails(feature) {
-    const description = (feature.description || '').toLowerCase();
-    const name = (feature.name || '').toLowerCase();
+    const description = (feature.description).toLowerCase();
+    const name = (feature.name).toLowerCase();
     const details = {
-      cost: [],
+      cost: feature.cost,
       targetType: 'any',
       targetAmount: 1,
       saveTrait: null,
@@ -635,54 +583,6 @@ export class DaggerheartActorCreator {
       uses: null,
       recovery: null
     };
-    
-    // Parse all cost types using the correct 'key' structure - ORDER MATTERS!
-    if (description.includes('spend a fear') || description.includes('spend fear')) {
-      details.cost.push({ 
-        key: 'fear', 
-        value: 1, 
-        keyIsID: false, 
-        step: null, 
-        scalable: false 
-      });
-    }
-    if (description.includes('mark a stress') || description.includes('mark stress')) {
-      details.cost.push({ 
-        key: 'stress', 
-        value: 1, 
-        keyIsID: false, 
-        step: null, 
-        scalable: false 
-      });
-    }
-    
-    if (description.includes('mark hope') || description.includes('spend hope')) {
-      details.cost.push({ 
-        key: 'hope', 
-        value: 1, 
-        keyIsID: false, 
-        step: null, 
-        scalable: false 
-      });
-    }
-    if (description.includes('mark an armor slot') || description.includes('mark armor')) {
-      details.cost.push({ 
-        key: 'armor', 
-        value: 1, 
-        keyIsID: false, 
-        step: null, 
-        scalable: false 
-      });
-    }
-    if (description.includes('mark a hp') || description.includes('mark hp')) {
-      details.cost.push({ 
-        key: 'hitPoints', 
-        value: 1, 
-        keyIsID: false, 
-        step: null, 
-        scalable: false 
-      });
-    }
     
     // Parse uses and recovery
     const usesMatch = description.match(/(\d+)\s*(?:time|use)s?\s*per\s*(scene|session|short\s*rest|long\s*rest)/i);
@@ -715,11 +615,9 @@ export class DaggerheartActorCreator {
       details.range = 'self';
     } else if (description.includes('melee') || name.includes('melee')) {
       details.range = 'melee';
-    } else if (name.includes('bath')) {
-      details.range = 'close'; // Acid Bath uses close range
     } else if (description.includes('within very close range')) {
       details.range = 'veryClose';
-    } else if (description.includes('within close range') || name.includes('spit')) {
+    } else if (description.includes('within close range')) {
       details.range = 'close';
     } else if (description.includes('within far range')) {
       details.range = 'far';
@@ -792,13 +690,6 @@ export class DaggerheartActorCreator {
       details.attackType = 'attack'; // Most common case
     } else {
       details.attackType = ''; // Leave blank if no clear indicators
-    }
-    
-    // Special case for Earth Eruption - it's an attack but with special mechanics
-    if (name.includes('eruption')) {
-      details.attackType = 'attack';
-      // Earth Eruption doesn't deal direct damage, it knocks prone
-      details.damageParts = []; // Clear any parsed damage
     }
     
     this._debug('Parsed action details', details);

@@ -25,7 +25,7 @@ export class StatblockFetcher {
       const result = {
         name: apiData.name,
         type: type,
-        tier: apiData.tier,
+        tier: apiData.tier || 1,
         subtype: subtype,
         description: apiData.shortDescription || "",
         difficulty: apiData.difficulty || 10,
@@ -34,12 +34,12 @@ export class StatblockFetcher {
         experiences: experiences,
         motivesAndTactics: motivesAndTactics,
         features: features,
-        hitPoints: { 
-          minor: apiData.damageThresholds?.minor || 0, 
+        hitPoints: {  
           major: apiData.damageThresholds?.major || 0, 
           severe: apiData.damageThresholds?.severe || 0,
           total: apiData.hitPoints || 0
         },
+        hordeHp: apiData.hordeUnitsPerHp || 1,
         stress: apiData.stress || 0,
         resistances: apiData.resistances || [],
         immunities: apiData.immunities || [],
@@ -75,10 +75,21 @@ export class StatblockFetcher {
   _build_features(featuresArray) {
     const resultedFeatures = []
     for (let feature of featuresArray || []) {
+      const formattedCost = []
+      for (const key of Object.keys(feature.cost) || []) {
+        formattedCost.push({
+          key: key,
+          value: feature.cost[key],
+          keyIsID: false,
+          step: null,
+          scalable: false,
+        });
+      }
+
       const formattedFeature = {
         name: feature.value ? `${feature.name} (${feature.value})` : feature.name,
         type: feature.type ? feature.type.toLowerCase() : "",
-        cost: feature.cost || {},
+        cost: formattedCost,
         summon: feature.summon || [],
         description: feature.description || "",
       }
@@ -110,11 +121,11 @@ export class StatblockFetcher {
     // (?:\s+(\w+))? -> Optionally matches spaces followed by the damage type ("phy")
     const regex = /^(\d+d\d+)(?:\+(\d+))?(?:\s+(\w+))?.*$/;
     const resultAttack = {
-      name: "",
-      dice: "",
+      name: "Attack",
+      dice: "d6",
       bonus: "0",
-      damageType: "",
-      range: ""
+      damageType: "phy",
+      range: "Melee"
     }
 
     if (!!weaponInfo) {
@@ -127,7 +138,7 @@ export class StatblockFetcher {
         if (match) {
           resultAttack.dice = match[1] || ""
           resultAttack.bonus = match[2] || "0"
-          resultAttack.damageType = match[3] || ""
+          resultAttack.damageType = match[3] || "phy"
         }
       }
     }
