@@ -127,7 +127,7 @@ export class DaggerheartActorCreator {
         description: parsedData.description,
         attack: {
           name: attackName,
-          img: attackType === "physical" ? this.default_physical_attack_image : this.default_magical_attack_image,
+          img: attackType[0] == "physical" ? this.default_physical_attack_image : this.default_magical_attack_image,
           range: this._mapRange(parsedData.attackInfo.range),
           roll: {
             type: 'attack',
