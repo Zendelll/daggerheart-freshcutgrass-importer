@@ -45,10 +45,6 @@ No build process is required. The module uses vanilla JavaScript ES6 modules.
 - **System**: Daggerheart (Foundryborne) v2.5.4+
 There is a big chance that the module works with older versions too, but it wasn't tested.
 
-## License
-
-This module is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues and pull requests.
