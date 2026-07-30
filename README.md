@@ -1,25 +1,19 @@
-# Daggerheart Statblock Importer
+# Daggerheart Freshcutgrass Importer
 
-A Foundry VTT module for importing Daggerheart adversary, environment, and encounter statblocks from freshcutgrass.app into the Foundryborne Daggerheart system.
+A Foundry VTT module for importing Daggerheart adversary and environment statblocks directly from freshcutgrass.app into the Foundryborne Daggerheart system.
 
 ## Features
 
-- **Easy Import**: Copy and paste statblock text directly from freshcutgrass.app print view
-- **Automatic Parsing**: Intelligent parsing of statblock format including:
-  - Name, tier, and type
-  - Difficulty and attack bonuses
-  - HP and Stress values *** WIP
-  - Features, actions, and reactions
-  - Motives & tactics
-- **Actor Creation**: Automatically creates properly configured Daggerheart actors
+- **Easy Import**: Copy and paste link to statblock from freshcutgrass.app ([example link](https://freshcutgrass.app/homebrew?id=uoHvyG83mBqs4YAxPpGB8n))
+- **Automatic Fetching**: Fetch data automatically from freshcutgrass.app 
+- **Actor Creation**: Automatically creates (mostly) properly configured Daggerheart actors
 - **Item Generation**: Creates embedded items for features and attacks
-- **Error Handling**: Clear error messages and graceful failure handling
 
 ## Installation
 
 ### Manual Installation
 
-1. Download the latest release from the [releases page](https://github.com/50gnr/daggerheart-statblock-importer/releases)
+1. Download the latest release from the [releases page](https://github.com/Zendelll/daggerheart-freshcutgrass-importer/releases)
 2. Extract the zip file to your Foundry VTT `Data/modules` directory
 3. Restart Foundry VTT
 4. Enable the module in your world's module settings
@@ -29,78 +23,17 @@ A Foundry VTT module for importing Daggerheart adversary, environment, and encou
 1. Open Foundry VTT
 2. Go to the "Add-on Modules" tab
 3. Click "Install Module"
-4. Search for "Daggerheart Statblock Importer"
+4. Search for "Daggerheart Freshcutgrass Importer"
 5. Click "Install"
 
 ## Usage
 
 1. **Open the Import Dialog**: In the Actors directory, click the "Import Statblock" button
-2. **Paste Statblock Text**: Copy the statblock text from freshcutgrass.app and paste it into the text area
-3. **Import**: Click the "Import Statblock" button to parse and create the actor
-4. **Review**: The created actor will automatically open for review and editing
-
-## Supported Statblock Format
-
-The module is designed to parse statblocks from freshcutgrass.app with the following structure:
-
-```
-CREATURE NAME T# Type
-Description text
-Difficulty: ##
-Attack: +#
-Experience: Description
-Motives & Tactics: Description
-
-FEATURES
-Feature Name (value) - Type
-Feature description text
-
-HP & STRESS
-MINOR HP [...] # MAJOR HP [...] # SEVERE HP [...] #
-STRESS [...] #
-```
-
-## Examples
-
-### Basic Adversary
-```
-ACID BURROWER T1 Solo
-A home-sized insect with digging claws and acidic blood.
-Difficulty: 14
-Attack: +3
-Experience: Tremor Sense +2
-Motives & Tactics: Burrow, Drag away, Feed, Reposition
-
-FEATURES
-Relentless (2) - Passive
-The Burrower can be spotlighted up to three times per GM turn.
-
-HP & STRESS
-MINOR HP [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ] 8 MAJOR HP [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ] 15
-STRESS [ ] [ ] [ ]
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"Could not find creature name"**: Ensure the first line contains the creature name and tier information
-2. **"Parsing failed"**: Check that the statblock follows the expected format from freshcutgrass.app
-3. **Missing features**: Ensure features are properly formatted with "- Type" at the end of the header line
-
-### Debug Mode
-
-Enable debug mode in the module settings to see detailed parsing information in the browser console.
+2. **Paste Link to a Statblock**: Copy the statblock link from freshcutgrass.app and paste it into the text area
+3. **Import**: Click the "Import Statblock" button to fetch and create the actor
+4. **Review**: The created actor will automatically open for review and editing. It's advisable to check actions and configure them if needed. It's almost impossible to fully automate action creation without mistakes, using action description as the data source.
 
 ## Development
-
-### Testing
-
-The module includes a standalone test runner that can be used to test parsing without Foundry VTT:
-
-1. Open `test/test-runner.html` in a web browser
-2. Paste statblock text and click "Parse Statblock"
-3. Run automated tests with "Run All Tests"
 
 ### Building
 
@@ -108,8 +41,9 @@ No build process is required. The module uses vanilla JavaScript ES6 modules.
 
 ## Compatibility
 
-- **Foundry VTT**: v12+ (verified with v13)
-- **System**: Daggerheart (Foundryborne) v1.0.0+
+- **Foundry VTT**: v14+
+- **System**: Daggerheart (Foundryborne) v2.5.4+
+There is a big chance that the module works with older versions too, but it wasn't tested.
 
 ## License
 
@@ -129,6 +63,6 @@ For support, please:
 ## Acknowledgments
 
 - Thanks to the Foundryborne team for the excellent Daggerheart system
+- Thanks to original module's author [50gnr](https://github.com/50gnr) for their work. It wouldn't be possible without them!
 - Inspired by the 5e Statblock Importer module
 - Built for the Daggerheart community
-
