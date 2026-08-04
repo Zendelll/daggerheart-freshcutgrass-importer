@@ -56,8 +56,9 @@ export class StatblockFetcher {
 
   async _call_freshcutgrass_api(id) {
     const freshcutgrass_api_url = "https://freshcutgrass.app/api/adversaries/public/by-ids"
+    const proxy_api_url = "https://daggerheart-freshcutgrass-importer.twozzendell.workers.dev/"
 
-    const response = await fetch(freshcutgrass_api_url, {
+    const response = await fetch(`${proxy_api_url}?url=${freshcutgrass_api_url}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
