@@ -2,10 +2,6 @@
 
 A Foundry VTT module for importing Daggerheart adversary and environment statblocks directly from freshcutgrass.app into the Foundryborne Daggerheart system.
 
-## Important notice
-
-Since this module uses requests to freshcutgrass.app, it may be necessary to install browser extension like [CORS Everywhere](https://addons.mozilla.org/en-US/firefox/addon/cors-everywhere/) to bypass CORS rules. I've already contacted freshcutgrass.app developer and they will allow CORS soon, but for now extension is needed.
-
 ## Features
 
 - **Easy Import**: Copy and paste link to statblock from freshcutgrass.app ([example link](https://freshcutgrass.app/homebrew?id=uoHvyG83mBqs4YAxPpGB8n))
