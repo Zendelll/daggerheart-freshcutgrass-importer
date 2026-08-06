@@ -11,20 +11,20 @@ A Foundry VTT module for importing Daggerheart adversary and environment statblo
 
 ## Installation
 
+### Foundry VTT Module Browser
+
+1. Open Foundry VTT
+2. Go to the "Add-on Modules" tab
+3. Click "Install Module"
+4. Paste "https://github.com/Zendelll/daggerheart-freshcutgrass-importer/releases/latest/download/module.json" into "Manifest URL" field
+5. Click "Install"
+
 ### Manual Installation
 
 1. Download the latest release from the [releases page](https://github.com/Zendelll/daggerheart-freshcutgrass-importer/releases)
 2. Extract the zip file to your Foundry VTT `Data/modules` directory
 3. Restart Foundry VTT
 4. Enable the module in your world's module settings
-
-### Foundry VTT Module Browser
-
-1. Open Foundry VTT
-2. Go to the "Add-on Modules" tab
-3. Click "Install Module"
-4. Search for "Daggerheart Freshcutgrass Importer"
-5. Click "Install"
 
 ## Usage
 
@@ -59,5 +59,5 @@ For support, please:
 
 - Thanks to the Foundryborne team for the excellent Daggerheart system
 - Thanks to original module's author [50gnr](https://github.com/50gnr) for their work. It wouldn't be possible without them!
-- Inspired by the 5e Statblock Importer module
+- Thanks to [FreshCutGrass](https://freshcutgrass.app) for the app we all love and use
 - Built for the Daggerheart community
